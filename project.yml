@@ -47,7 +47,12 @@ targets:
         FRAMEWORK_SEARCH_PATHS:
           - "$(inherited)"
           - "$(PROJECT_DIR)/Frameworks"
-        # After running `xcodegen`, drag TapOnPhone.xcframework (or
-        # TapOnPhone.framework) into the Xcode target's Frameworks,
-        # Libraries, and Embedded Content section with "Embed & Sign".
-    dependencies: []
+    dependencies:
+      # Proprietary Getnet SDK. The binary is NOT committed in this
+      # repository — it must be placed at
+      # `Frameworks/TapOnPhoneHTI.xcframework/` before running
+      # `xcodegen` + `xcodebuild`. See `Frameworks/README.md` and
+      # `.github/workflows/ios-release.yml`.
+      - framework: Frameworks/TapOnPhoneHTI.xcframework
+        embed: true
+        sign: true
