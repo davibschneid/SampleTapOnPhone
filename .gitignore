@@ -48,8 +48,12 @@ fastlane/screenshots/**/*.png
 fastlane/test_output
 
 # TapOnPhone SDK binary — not redistributed in this sample repo.
+# The Frameworks/ directory itself is tracked (see Frameworks/README.md),
+# but the proprietary binaries dropped into it are ignored.
 Frameworks/TapOnPhone.framework/
 Frameworks/TapOnPhone.xcframework/
+Frameworks/*.framework/
+Frameworks/*.xcframework/
 
 # macOS
 .DS_Store
