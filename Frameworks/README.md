@@ -4,28 +4,32 @@ Esta pasta é o destino do **binário proprietário da SDK Getnet**:
 
 ```
 Frameworks/
-└── TapOnPhone.xcframework/
+└── TapOnPhoneHTI.xcframework/
 ```
+
+O _nome do arquivo_ é `TapOnPhoneHTI.xcframework`, mas o _module name_
+que ele expõe é `TapOnPhone`, por isso os arquivos Swift fazem
+`import TapOnPhone`.
 
 ## Como adicionar o binário
 
-1. Obtenha o `TapOnPhone.xcframework` (ou `TapOnPhone.framework`) com o seu
-   contato comercial / técnico da Getnet. O arquivo **não é distribuído**
-   neste repositório.
-2. Copie o diretório `TapOnPhone.xcframework` inteiro para dentro desta
-   pasta.
+1. Obtenha o `TapOnPhoneHTI.xcframework` com o seu contato comercial /
+   técnico da Getnet. O arquivo **não é distribuído** neste
+   repositório.
+2. Copie o diretório `TapOnPhoneHTI.xcframework` inteiro para dentro
+   desta pasta.
 3. No Xcode, abra o target `SampleTapOnPhone` →
    **General → Frameworks, Libraries, and Embedded Content → +** →
    **Add Other… → Add Files…** → selecione
-   `Frameworks/TapOnPhone.xcframework` → marque **Embed & Sign**.
+   `Frameworks/TapOnPhoneHTI.xcframework` → marque **Embed & Sign**.
 4. Confirme em **Build Settings → Framework Search Paths** que
    `$(PROJECT_DIR)/Frameworks` está presente.
 
 ## Por que essa pasta está no `.gitignore`
 
-O `.gitignore` ignora `Frameworks/TapOnPhone.framework/` e
-`Frameworks/TapOnPhone.xcframework/` para evitar que o binário da Getnet
-seja commitado no repositório público por acidente. Apenas este
+O `.gitignore` ignora qualquer `*.framework/` e `*.xcframework/` dentro
+desta pasta (inclusive `TapOnPhoneHTI.xcframework/`) para evitar que o
+binário proprietário seja commitado por acidente. Apenas este
 `README.md` é versionado para documentar o layout.
 
 ## CI (build sem o binário real)

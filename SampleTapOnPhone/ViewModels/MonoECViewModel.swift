@@ -37,36 +37,31 @@ final class MonoECViewModel: ObservableObject {
         isLoading = true
         defer { isLoading = false }
 
-        do {
-            let parameters = MonoECAuthParameters(
-                companyDocument: companyDocument,
-                username: username,
-                password: password,
-                storeCode: storeCode.isEmpty ? nil : storeCode
-            )
-            let result = try await TapOnPhoneSDK.authentication.authenticateMonoEC(parameters)
-            if !result.isSuccessful {
-                errorMessage = "[\(result.statusCode)] \(result.message)"
-            }
-            return MonoECOutcome(
-                isSuccessful: result.isSuccessful,
-                message: result.message,
-                terminalDescription: Self.describe(result.configuration)
-            )
-        } catch {
-            errorMessage = error.localizedDescription
-            return nil
+        let parameters = MonoECAuthParameters(
+            companyDocument: companyDocument,
+            username: username,
+            password: password,
+            storeCode: storeCode.isEmpty ? nil : storeCode
+        )
+        let result = await TapOnPhoneSDK.operations.authenticateMonoEC(parameters)
+        if !result.isSuccessful {
+            errorMessage = "[\(result.statusCode)] \(result.message)"
         }
+        return MonoECOutcome(
+            isSuccessful: result.isSuccessful,
+            message: result.message,
+            terminalDescription: Self.describe(result.configuration)
+        )
     }
 
     private static func describe(_ configuration: MonoECConfiguration?) -> String {
         guard let configuration else { return "" }
         var parts: [String] = []
-        if let store = configuration.storeName, !store.isEmpty {
-            parts.append(store)
+        if !configuration.storeName.isEmpty {
+            parts.append(configuration.storeName)
         }
-        if let terminal = configuration.terminalCode, !terminal.isEmpty {
-            parts.append("Terminal \(terminal)")
+        if !configuration.terminalCode.isEmpty {
+            parts.append("Terminal \(configuration.terminalCode)")
         }
         return parts.joined(separator: " • ")
     }

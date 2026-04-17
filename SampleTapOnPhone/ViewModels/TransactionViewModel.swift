@@ -90,21 +90,12 @@ final class TransactionViewModel: ObservableObject {
                 )
             }
             result = TransactionOutcome(from: cardResult)
-        } catch let error as TapOnPhoneTefError {
-            errorMessage = Self.describe(error)
         } catch AuthenticationError.tokenExpired {
             errorMessage = "Sessão expirada. Atualize o accessToken na aba Conta."
+        } catch let error as CardReaderError {
+            errorMessage = error.description
         } catch {
             errorMessage = error.localizedDescription
-        }
-    }
-
-    private static func describe(_ error: TapOnPhoneTefError) -> String {
-        switch error {
-        case let .declined(codeErro, codeResp, message):
-            return "Transação negada (erro \(codeErro), resp \(codeResp)): \(message)"
-        case .invalidInstallments:
-            return "Número de parcelas inválido para o modo selecionado."
         }
     }
 }

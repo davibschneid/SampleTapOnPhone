@@ -28,8 +28,10 @@ O projeto cobre os fluxos descritos na documentação oficial da SDK:
   `com.apple.developer.proximity-reader.payment.acceptance`.
 - Conta Apple **sandbox** ativa no iPhone de testes
   (<https://developer.apple.com/help/app-store-connect/test-in-app-purchases/create-sandbox-apple-accounts/>).
-- Binário `TapOnPhone.xcframework` (ou `TapOnPhone.framework`)
+- Binário `TapOnPhoneHTI.xcframework` (ou `TapOnPhone.framework`)
   fornecido pela Getnet — **não** é distribuído neste repositório.
+  O _module name_ exposto pelo framework é `TapOnPhone`, por isso os
+  arquivos Swift usam `import TapOnPhone`.
 
 ## Estrutura do projeto
 
@@ -55,7 +57,7 @@ SampleTapOnPhone/
 │   └── Resources/
 │       ├── Info.plist
 │       └── SampleTapOnPhone.entitlements
-└── Frameworks/                   # (criado por você) coloque aqui o TapOnPhone.xcframework
+└── Frameworks/                   # Coloque aqui o TapOnPhoneHTI.xcframework (ver Frameworks/README.md)
 ```
 
 ## Gerando o projeto Xcode
@@ -91,11 +93,11 @@ Se você prefere trabalhar direto no Xcode:
    (`Signing & Capabilities → + Capability → Tap to Pay on iPhone`).
    Isso acrescenta `com.apple.developer.proximity-reader.payment.acceptance`
    ao provisioning profile.
-2. Crie a pasta `Frameworks/` na raiz e copie o `TapOnPhone.xcframework`
-   (fornecido pela Getnet) para dentro dela.
+2. Copie o `TapOnPhoneHTI.xcframework` (fornecido pela Getnet) para a
+   pasta `Frameworks/` deste repositório.
 3. No Xcode, em **General → Frameworks, Libraries, and Embedded Content**,
    clique em **+**, escolha **Add Other… → Add Files…**, selecione
-   `Frameworks/TapOnPhone.xcframework` e marque **Embed & Sign**.
+   `Frameworks/TapOnPhoneHTI.xcframework` e marque **Embed & Sign**.
 4. Confirme que **Build Settings → Framework Search Paths** inclui
    `$(PROJECT_DIR)/Frameworks`.
 5. Compile (`⌘B`). Os `import TapOnPhone` serão resolvidos.
@@ -124,7 +126,7 @@ e toque em **Aplicar novo token** — internamente o app invoca
 
 Usado apenas para certificações internas. Colete documento da empresa,
 usuário, senha e (opcionalmente) código da loja. O app chama
-`TapOnPhoneSDK.authentication.authenticateMonoEC(_:)`.
+`TapOnPhoneSDK.operations.authenticateMonoEC(_:)`.
 
 ## Transações
 
@@ -152,5 +154,5 @@ Tap to Pay habilitado e uma Apple Sandbox Account.
 ## Licença
 
 Código deste sample é distribuído sob a licença MIT — consulte `LICENSE`.
-O `TapOnPhone.xcframework` é de propriedade da Getnet e segue os termos
+O `TapOnPhoneHTI.xcframework` é de propriedade da Getnet e segue os termos
 do contrato assinado com o fornecedor.

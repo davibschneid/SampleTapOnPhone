@@ -50,8 +50,8 @@ final class SilentLoginViewModel: ObservableObject {
         let parameters = SilentLoginParams(
             tokens: tokens,
             appToken: appToken,
-            document: document,
             packageName: packageName,
+            document: document,
             deviceName: deviceName.isEmpty ? nil : deviceName,
             nickName: nickName.isEmpty ? nil : nickName,
             user: user.isEmpty ? nil : user
