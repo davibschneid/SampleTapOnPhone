@@ -15,13 +15,16 @@ struct AccountView: View {
     var body: some View {
         Form {
             Section("Sessão") {
-                LabeledContent("Terminal", value: session.terminalDescription.isEmpty
-                               ? "—"
-                               : session.terminalDescription)
-                LabeledContent("Token emitido em",
-                               value: session.lastAccessTokenCreatedAt
-                                   .map { $0.formatted(date: .numeric, time: .standard) }
-                                   ?? "—")
+                LabeledContent("Terminal") {
+                    Text(session.terminalDescription.isEmpty
+                         ? "—"
+                         : session.terminalDescription)
+                }
+                LabeledContent("Token emitido em") {
+                    Text(session.lastAccessTokenCreatedAt
+                            .map { $0.formatted(date: .numeric, time: .standard) }
+                            ?? "—")
+                }
             }
 
             Section("Atualizar accessToken") {
