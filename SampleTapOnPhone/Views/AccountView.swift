@@ -27,7 +27,7 @@ struct AccountView: View {
                 }
             }
 
-            Section("Atualizar accessToken") {
+            Section {
                 TextField("Novo ssoToken", text: $viewModel.ssoToken, axis: .vertical)
                     .lineLimit(1...4)
                     .textInputAutocapitalization(.never)
@@ -43,6 +43,8 @@ struct AccountView: View {
                     Text("Aplicar novo token")
                 }
                 .disabled(viewModel.ssoToken.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+            } header: {
+                Text("Atualizar accessToken")
             } footer: {
                 Text("Use este método após a exceção AuthenticationError.tokenExpired.")
             }
