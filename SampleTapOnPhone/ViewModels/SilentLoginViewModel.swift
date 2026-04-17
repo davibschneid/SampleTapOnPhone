@@ -77,7 +77,7 @@ final class SilentLoginViewModel: ObservableObject {
         if let store = configuration.storeName, !store.isEmpty {
             parts.append(store)
         }
-        if let terminal = configuration.codeTerminal, !terminal.isEmpty {
+        if let terminal = configuration.codeTerm, !terminal.isEmpty {
             parts.append("Terminal \(terminal)")
         }
         return parts.joined(separator: " • ")
