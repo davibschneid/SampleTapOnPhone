@@ -1,0 +1,182 @@
+name: Build signed IPA (manual)
+
+on:
+  workflow_dispatch:
+    inputs:
+      export_method:
+        type: choice
+        description: "Export method (matches your provisioning profile)"
+        options:
+          - ad-hoc
+          - development
+          - app-store
+          - enterprise
+        default: ad-hoc
+      sdk_release_tag:
+        type: string
+        description: "Tag of the GitHub Release that contains TapOnPhoneHTI.xcframework.zip"
+        default: sdk-0.1.0-alpha-0
+
+jobs:
+  build:
+    name: Archive & export IPA
+    runs-on: macos-15
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Xcode
+        uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: latest-stable
+
+      - name: Install xcodegen
+        run: brew install xcodegen
+
+      - name: Download TapOnPhoneHTI.xcframework from GitHub Release
+        if: ${{ hashFiles('Frameworks/TapOnPhoneHTI.xcframework/Info.plist') == '' }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          mkdir -p Frameworks
+          gh release download "${{ inputs.sdk_release_tag }}" \
+            --repo "${{ github.repository }}" \
+            --pattern 'TapOnPhoneHTI.xcframework.zip' \
+            --dir "$RUNNER_TEMP"
+          unzip -q "$RUNNER_TEMP/TapOnPhoneHTI.xcframework.zip" -d "$RUNNER_TEMP/sdk-unpack"
+          # The artifact from Getnet expands to ./build/TapOnPhoneHTI.xcframework
+          if [ -d "$RUNNER_TEMP/sdk-unpack/build/TapOnPhoneHTI.xcframework" ]; then
+            mv "$RUNNER_TEMP/sdk-unpack/build/TapOnPhoneHTI.xcframework" Frameworks/
+          elif [ -d "$RUNNER_TEMP/sdk-unpack/TapOnPhoneHTI.xcframework" ]; then
+            mv "$RUNNER_TEMP/sdk-unpack/TapOnPhoneHTI.xcframework" Frameworks/
+          else
+            echo "::error::TapOnPhoneHTI.xcframework not found inside the release asset"
+            find "$RUNNER_TEMP/sdk-unpack" -maxdepth 3 -type d
+            exit 1
+          fi
+          ls Frameworks/
+
+      - name: Import signing certificate
+        env:
+          CERT_P12_BASE64: ${{ secrets.APPLE_DISTRIBUTION_CERT_P12 }}
+          CERT_PASSWORD: ${{ secrets.APPLE_DISTRIBUTION_CERT_PASSWORD }}
+          KEYCHAIN_PASSWORD: ${{ secrets.APPLE_KEYCHAIN_PASSWORD }}
+        run: |
+          set -euo pipefail
+          CERT_PATH="$RUNNER_TEMP/cert.p12"
+          KEYCHAIN_PATH="$RUNNER_TEMP/build.keychain-db"
+          echo "$CERT_P12_BASE64" | base64 --decode > "$CERT_PATH"
+          security create-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+          security set-keychain-settings -lut 21600 "$KEYCHAIN_PATH"
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+          security import "$CERT_PATH" -k "$KEYCHAIN_PATH" -P "$CERT_PASSWORD" -T /usr/bin/codesign
+          security list-keychains -d user -s "$KEYCHAIN_PATH" $(security list-keychains -d user | tr -d '"')
+          security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+          rm "$CERT_PATH"
+          echo "Installed signing identities:"
+          security find-identity -v -p codesigning "$KEYCHAIN_PATH"
+
+      - name: Install provisioning profile
+        env:
+          PROFILE_BASE64: ${{ secrets.APPLE_PROVISIONING_PROFILE }}
+        run: |
+          set -euo pipefail
+          PROFILE_DIR="$HOME/Library/MobileDevice/Provisioning Profiles"
+          mkdir -p "$PROFILE_DIR"
+          PROFILE_PATH="$RUNNER_TEMP/profile.mobileprovision"
+          echo "$PROFILE_BASE64" | base64 --decode > "$PROFILE_PATH"
+          UUID=$(security cms -D -i "$PROFILE_PATH" | plutil -extract UUID raw -)
+          PROFILE_NAME=$(security cms -D -i "$PROFILE_PATH" | plutil -extract Name raw -)
+          cp "$PROFILE_PATH" "$PROFILE_DIR/$UUID.mobileprovision"
+          echo "PROFILE_UUID=$UUID"   >> "$GITHUB_ENV"
+          echo "PROFILE_NAME=$PROFILE_NAME" >> "$GITHUB_ENV"
+          echo "Installed profile: $PROFILE_NAME ($UUID)"
+
+      - name: Generate Xcode project
+        run: xcodegen generate --spec project.yml
+
+      - name: Create ExportOptions.plist
+        env:
+          TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          BUNDLE_ID: ${{ secrets.APPLE_BUNDLE_IDENTIFIER }}
+        run: |
+          set -euo pipefail
+          SIGN_CERT="Apple Distribution"
+          if [ "${{ inputs.export_method }}" = "development" ]; then
+            SIGN_CERT="Apple Development"
+          fi
+          cat > ExportOptions.plist <<EOF
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0">
+          <dict>
+              <key>method</key>
+              <string>${{ inputs.export_method }}</string>
+              <key>teamID</key>
+              <string>$TEAM_ID</string>
+              <key>signingStyle</key>
+              <string>manual</string>
+              <key>signingCertificate</key>
+              <string>$SIGN_CERT</string>
+              <key>provisioningProfiles</key>
+              <dict>
+                  <key>$BUNDLE_ID</key>
+                  <string>$PROFILE_NAME</string>
+              </dict>
+              <key>compileBitcode</key>
+              <false/>
+              <key>stripSwiftSymbols</key>
+              <true/>
+              <key>destination</key>
+              <string>export</string>
+          </dict>
+          </plist>
+          EOF
+          echo "ExportOptions.plist:"
+          cat ExportOptions.plist
+
+      - name: Archive
+        env:
+          TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          BUNDLE_ID: ${{ secrets.APPLE_BUNDLE_IDENTIFIER }}
+        run: |
+          set -euo pipefail
+          SIGN_IDENT="Apple Distribution"
+          if [ "${{ inputs.export_method }}" = "development" ]; then
+            SIGN_IDENT="Apple Development"
+          fi
+          xcodebuild archive \
+            -project SampleTapOnPhone.xcodeproj \
+            -scheme SampleTapOnPhone \
+            -configuration Release \
+            -archivePath "$RUNNER_TEMP/SampleTapOnPhone.xcarchive" \
+            -destination 'generic/platform=iOS' \
+            -allowProvisioningUpdates=NO \
+            -skipPackagePluginValidation \
+            DEVELOPMENT_TEAM="$TEAM_ID" \
+            PRODUCT_BUNDLE_IDENTIFIER="$BUNDLE_ID" \
+            PROVISIONING_PROFILE_SPECIFIER="$PROFILE_NAME" \
+            CODE_SIGN_IDENTITY="$SIGN_IDENT" \
+            CODE_SIGN_STYLE=Manual \
+            | xcpretty && exit ${PIPESTATUS[0]}
+
+      - name: Export IPA
+        run: |
+          set -euo pipefail
+          xcodebuild -exportArchive \
+            -archivePath "$RUNNER_TEMP/SampleTapOnPhone.xcarchive" \
+            -exportPath "$RUNNER_TEMP/ipa" \
+            -exportOptionsPlist ExportOptions.plist \
+            -allowProvisioningUpdates=NO \
+            | xcpretty && exit ${PIPESTATUS[0]}
+          ls -la "$RUNNER_TEMP/ipa"
+
+      - name: Upload IPA
+        uses: actions/upload-artifact@v4
+        with:
+          name: SampleTapOnPhone-${{ inputs.export_method }}-ipa
+          path: ${{ runner.temp }}/ipa/*.ipa
+          if-no-files-found: error
+          retention-days: 14

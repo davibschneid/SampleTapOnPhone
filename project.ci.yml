@@ -1,0 +1,61 @@
+name: SampleTapOnPhone
+options:
+  bundleIdPrefix: com.example
+  createIntermediateGroups: true
+  deploymentTarget:
+    iOS: "16.4"
+  developmentLanguage: pt-BR
+  xcodeVersion: "15.0"
+
+# CI-only variant of `project.yml`.
+#
+# Swaps the proprietary `TapOnPhone.xcframework` for the local Swift
+# Package stub in `Tools/TapOnPhoneStub`, which exposes the same public
+# API as the real SDK. This lets GitHub Actions verify that the sample
+# app still compiles and its types resolve, without requiring access
+# to the Getnet binary.
+
+packages:
+  TapOnPhoneStub:
+    path: Tools/TapOnPhoneStub
+
+settings:
+  base:
+    SWIFT_VERSION: "5.9"
+    IPHONEOS_DEPLOYMENT_TARGET: "16.4"
+    MARKETING_VERSION: "0.1.0"
+    CURRENT_PROJECT_VERSION: "1"
+    DEVELOPMENT_TEAM: ""
+    CODE_SIGN_STYLE: "Automatic"
+    CODE_SIGNING_ALLOWED: "NO"
+    CODE_SIGNING_REQUIRED: "NO"
+
+targets:
+  SampleTapOnPhone:
+    type: application
+    platform: iOS
+    deploymentTarget: "16.4"
+    sources:
+      - path: SampleTapOnPhone
+        excludes:
+          - "**/*.entitlements"
+          - "**/Info.plist"
+    resources:
+      - path: SampleTapOnPhone/Resources
+        excludes:
+          - "**/Info.plist"
+          - "**/*.entitlements"
+    info:
+      path: SampleTapOnPhone/Resources/Info.plist
+    entitlements:
+      path: SampleTapOnPhone/Resources/SampleTapOnPhone.entitlements
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.example.SampleTapOnPhone
+        TARGETED_DEVICE_FAMILY: "1"
+        SUPPORTS_MACCATALYST: "NO"
+        SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD: "NO"
+        CODE_SIGNING_ALLOWED: "NO"
+    dependencies:
+      - package: TapOnPhoneStub
+        product: TapOnPhone

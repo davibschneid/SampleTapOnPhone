@@ -1,0 +1,58 @@
+name: SampleTapOnPhone
+options:
+  bundleIdPrefix: com.example
+  createIntermediateGroups: true
+  deploymentTarget:
+    iOS: "16.4"
+  developmentLanguage: pt-BR
+  xcodeVersion: "15.0"
+
+settings:
+  base:
+    SWIFT_VERSION: "5.9"
+    IPHONEOS_DEPLOYMENT_TARGET: "16.4"
+    MARKETING_VERSION: "0.1.0"
+    CURRENT_PROJECT_VERSION: "1"
+    # Adjust to your own team id. Tap to Pay requires a provisioning
+    # profile with the `com.apple.developer.proximity-reader.payment.acceptance`
+    # entitlement approved by Apple.
+    DEVELOPMENT_TEAM: ""
+    CODE_SIGN_STYLE: "Automatic"
+
+targets:
+  SampleTapOnPhone:
+    type: application
+    platform: iOS
+    deploymentTarget: "16.4"
+    sources:
+      - path: SampleTapOnPhone
+        excludes:
+          - "**/*.entitlements"
+          - "**/Info.plist"
+    resources:
+      - path: SampleTapOnPhone/Resources
+        excludes:
+          - "**/Info.plist"
+          - "**/*.entitlements"
+    info:
+      path: SampleTapOnPhone/Resources/Info.plist
+    entitlements:
+      path: SampleTapOnPhone/Resources/SampleTapOnPhone.entitlements
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.example.SampleTapOnPhone
+        TARGETED_DEVICE_FAMILY: "1"
+        SUPPORTS_MACCATALYST: "NO"
+        SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD: "NO"
+        FRAMEWORK_SEARCH_PATHS:
+          - "$(inherited)"
+          - "$(PROJECT_DIR)/Frameworks"
+    dependencies:
+      # Proprietary Getnet SDK. The binary is NOT committed in this
+      # repository — it must be placed at
+      # `Frameworks/TapOnPhoneHTI.xcframework/` before running
+      # `xcodegen` + `xcodebuild`. See `Frameworks/README.md` and
+      # `.github/workflows/ios-release.yml`.
+      - framework: Frameworks/TapOnPhoneHTI.xcframework
+        embed: true
+        sign: true
